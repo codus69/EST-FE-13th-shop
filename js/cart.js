@@ -7,33 +7,95 @@ updateCartCount();
 const cart = readCart();
 console.log(cart);
 
-const cartHTML = cart.map(
-  item =>
-    `<article class="cart-item">
-      <span class="item-check"><span class="check-box" aria-hidden="true"></span></span>
-      <label class="item-check">
-        <input type="checkbox"/>               
-      </label>    
+let cartHTML = [];
 
-      <div class="cart-thumb">
-        <img
-          src="${item.thumb}"
-          alt="${item.title}"
-        />
-      </div>
-      <div class="cart-item-info">
-        <h2>${item.title}</h2>
-        <p>브랜드명 | ${item.brand}</p>
-        <strong>$${item.price}</strong>
-      </div>
-      <div class="quantity-box" aria-label="수량">
-        <button type="button" aria-label="수량 줄이기">-</button>
-        <span>1</span>
-        <button type="button" aria-label="수량 늘리기">+</button>
-      </div>
-      <button type="button" class="remove-item" aria-label="${item.title} 삭제"></button>
-    </article>
-  `,
-);
+//상품 개수 반영
+function updateCartCountFx() {
+  cartCountText.textContent = `총 ${cart.length}개의 상품`;
+}
+updateCartCountFx();
 
-cartList.innerHTML += cartHTML.join("");
+//상품금액, 결제금액 업데이트
+//reduce 카트 항목들 마다 수량*가격 + 수량*가격
+function updateTotalAmount() {
+  const sum = cart.reduce((acc, current) => acc + current.qty * current.price, 0).toFixed(2);
+  productAmount.textContent = `$${sum}`;
+  totalAmount.textContent = `$${sum}`;
+}
+updateTotalAmount();
+
+//이벤트
+cartList.addEventListener("click", e => {
+  const cartItem = e.target.closest(".cart-item");
+  if (!cartItem) return;
+  const id = Number(cartItem.dataset.id);
+  const targetItem = cart.find(item => item.id === id);
+
+  if (e.target.closest(".minusBtn")) {
+    if (targetItem.qty > 1) {
+      targetItem.qty--;
+      //로컬스토리지 저장
+      saveCart();
+      //화면 코드 생성
+      renderCart();
+    }
+    return;
+  }
+  if (e.target.closest(".plusBtn")) {
+    targetItem.qty++;
+    //로컬스토리지 저장
+    saveCart();
+    //화면 코드 생성
+    renderCart();
+    return;
+  }
+
+  if (e.target.closest(".remove-item")) {
+    cart = cart.filter(item => item.id !== id);
+    saveCart();
+    renderCart();
+    return;
+  }
+});
+
+function renderCart() {
+  console.log(cart);
+  if (cart.length === 0) {
+    cartHTML.push(
+      `<article>
+  장바구니가 비어있습니다.
+</article>`,
+    );
+  } else {
+    cartHTML = cart.map(
+      item =>
+        `<article class="cart-item" data-id="${item.id}">
+        <label class="item-check">
+          <input type="checkbox"/>               
+        </label>    
+  
+        <div class="cart-thumb">
+          <img
+            src="${item.thumb}"
+            alt="${item.title}"
+          />
+        </div>
+        <div class="cart-item-info">
+          <h2>${item.title}</h2>
+          <p>브랜드명 | ${item.brand}</p>
+          <strong>$${item.price}</strong>
+        </div>
+        <div class="quantity-box" aria-label="수량">
+          <button class="minusBtn" type="button" aria-label="수량 줄이기" >-</button>
+          <span>${item.qty}</span>
+          <button class="plusBtn" type="button" aria-label="수량 늘리기">+</button>
+        </div>
+        <button type="button" class="remove-item" aria-label="${item.title} 삭제"></button>
+      </article>
+    `,
+    );
+  }
+  // cartList.innerHTML += cartHTML.join("");
+  cartList.insertAdjacentHTML("beforeend", cartHTML.join(""));
+}
+renderCart();
